@@ -18,6 +18,16 @@ public class FileModel {
 	private String os;
 
 	private Date addtime;
+	
+	private boolean isPreview;
+
+	public boolean isPreview() {
+		return isPreview;
+	}
+
+	public void setPreview(boolean isPreview) {
+		this.isPreview = isPreview;
+	}
 
 	public String get_id() {
 		return _id;

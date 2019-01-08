@@ -1,19 +1,16 @@
 package cn.minsin.file.util;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.multipart.MultipartFile;
 
 import cn.minsin.core.exception.MutilsErrorException;
 import cn.minsin.core.tools.DateUtil;
+import cn.minsin.file.model.FileSaveResult;
 
 /**
  * 提供给 mutils-file-server的服务端文件帮助类
@@ -22,38 +19,6 @@ import cn.minsin.core.tools.DateUtil;
  *
  */
 public class FileUtil {
-	
-	
-	public static void getFile(String path, HttpServletResponse resp) throws MutilsErrorException {
-		try {
-			// 读取路径下面的文件
-			File file = new File(path);
-			String fileName = new String(file.getName().getBytes("UTF-8"), "ISO8859-1");
-			resp.setCharacterEncoding("utf-8");
-			resp.setContentType("application/x-msdownload; charset=utf-8");
-			resp.setHeader("content-disposition", "attachment;filename=" + fileName);
-			// 读取指定路径下面的文件
-			InputStream in = new FileInputStream(file);
-			OutputStream outputStream = new BufferedOutputStream(resp.getOutputStream());
-			// 创建存放文件内容的数组
-			byte[] buff = new byte[1024];
-			// 所读取的内容使用n来接收
-			int n;
-			// 当没有读取完时,继续读取,循环
-			while ((n = in.read(buff)) != -1) {
-				// 将字节数组的数据全部写入到输出流中
-				outputStream.write(buff, 0, n);
-			}
-			// 强制将缓存区的数据进行输出
-			outputStream.flush();
-			// 关流
-			outputStream.close();
-			in.close();
-		} catch (Exception e) {
-			throw new MutilsErrorException(e, "文件读取失败");
-		}
-
-	}
 
 	/**
 	 * 保存单个文件
@@ -61,12 +26,12 @@ public class FileUtil {
 	 * @param file 预保存文件
 	 * @return
 	 */
-	public static String saveFile(MultipartFile file,String disk) throws MutilsErrorException {
+	public static FileSaveResult saveFile(MultipartFile file, String disk) throws MutilsErrorException {
 		try {
 			String fileName = file.getOriginalFilename().replace(",", "");
 			String gName = fileName;
 			String savePath = DateUtil.date2String(new Date(), "yyyyMMdd/");
-			String path = disk+ savePath;
+			String path = disk + savePath;
 			// 定义上传路径
 			checkPath(path);
 			int count = 0;
@@ -85,10 +50,24 @@ public class FileUtil {
 				}
 				// 写入文件
 				OutputStream out = new FileOutputStream(fileUrl);
-				out.write(file.getBytes());
+				byte[] bytes = file.getBytes();
+				byte[] header = new byte[28];
+				for (int i = 0; i < 28; i++) {
+					header[i] = bytes[i];
+				}
+				//判断文件头
+				FileType type = getType(header);
+				if(type==null) {
+					out.close();
+					throw new MutilsErrorException("非法类型，无法上传");
+				}
+				out.write(bytes);
 				out.flush();
 				out.close();
-				return savePath + gName;
+				FileSaveResult fileSaveResult = new FileSaveResult();
+				fileSaveResult.setPreview(type.isCanPreview());
+				fileSaveResult.setUrl(savePath + gName);
+				return fileSaveResult;
 			}
 		} catch (Exception e) {
 			throw new MutilsErrorException(e, "保存文件失败");
@@ -107,4 +86,37 @@ public class FileUtil {
 		}
 	}
 
+	/** 判断文件类型 */
+	public static FileType getType(byte[] src) throws IOException {
+		// 获取文件头
+		String fileHead = bytesToHex(src);
+		if (fileHead != null && fileHead.length() > 0) {
+			fileHead = fileHead.toUpperCase();
+			FileType[] fileTypes = FileType.values();
+
+			for (FileType type : fileTypes) {
+				if (fileHead.startsWith(type.getValue())) {
+					return type;
+				}
+			}
+		}
+		return null;
+	}
+
+	/** 将字节数组转换成16进制字符串 */
+	public static String bytesToHex(byte[] src) {
+		StringBuilder stringBuilder = new StringBuilder("");
+		if (src == null || src.length <= 0) {
+			return null;
+		}
+		for (int i = 0; i < src.length; i++) {
+			int v = src[i] & 0xFF;
+			String hv = Integer.toHexString(v);
+			if (hv.length() < 2) {
+				stringBuilder.append(0);
+			}
+			stringBuilder.append(hv);
+		}
+		return stringBuilder.toString();
+	}
 }

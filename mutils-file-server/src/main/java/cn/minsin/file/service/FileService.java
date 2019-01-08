@@ -12,6 +12,7 @@ import cn.minsin.core.exception.MutilsErrorException;
 import cn.minsin.core.tools.StringUtil;
 import cn.minsin.file.config.MutilsFileConfig;
 import cn.minsin.file.model.FileModel;
+import cn.minsin.file.model.FileSaveResult;
 import cn.minsin.file.repository.FileRepository;
 import cn.minsin.file.util.FileUtil;
 
@@ -31,15 +32,16 @@ public class FileService {
 			field.setAccessible(true);
 			Object object = field.get(mutilsFileConfig);// 文件保存地址
 			String serverUrl = mutilsFileConfig.getServerUrl();
-			String saveFile = FileUtil.saveFile(file, object.toString());
-			String string = serverUrl + saveFile;
+			FileSaveResult saveFile = FileUtil.saveFile(file, object.toString());
+			String string = serverUrl + saveFile.getUrl();
 			String uuidForLength = StringUtil.getUUIDForLength(32).toLowerCase();
 			FileModel f = new FileModel();
 			f.setAddtime(new Date());
 			f.setFullPath(string);
-			f.setDiskPath(object + saveFile);
+			f.setDiskPath(object + saveFile.getUrl());
 			f.setOs(property);
 			f.set_id(uuidForLength);
+			f.setPreview(saveFile.isPreview());
 			fileRepository.insert(f);
 			return serverUrl+uuidForLength;
 		} catch (Exception e) {

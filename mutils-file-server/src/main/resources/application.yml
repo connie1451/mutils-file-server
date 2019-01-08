@@ -1,14 +1,19 @@
 server:
   port: 7749
-
+ 
 mutils:
-  save-path-windows: D:/upload/
-  save-path-linux: /root/minsin/upload/
-  save-path-macos: /root/minsin/upload/
-  server-url: http://192.168.1.7:7749/
+  save-path-windows: D:/upload/ #windows需要保存的盘符
+  save-path-linux: /root/minsin/upload/ #linux需要保存的盘符
+  save-path-macos: /root/minsin/upload/ #mac需要保存的盘符
+  server-url: http://192.168.1.7:7749/ #服务地址
 
 spring: 
   data: 
     mongodb:
       uri: mongodb://192.168.1.251:27017
       database: db_mutils_server
+  servlet: 
+    multipart:
+      enabled: true
+      max-file-size: 1024MB
+      max-request-size: 1024MB
