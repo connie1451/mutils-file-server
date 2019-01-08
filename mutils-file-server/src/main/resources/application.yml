@@ -1,0 +1,14 @@
+server:
+  port: 7749
+
+mutils:
+  save-path-windows: D:/upload/
+  save-path-linux: /root/minsin/upload/
+  save-path-macos: /root/minsin/upload/
+  server-url: http://192.168.1.7:7749/
+
+spring: 
+  data: 
+    mongodb:
+      uri: mongodb://192.168.1.251:27017
+      database: db_mutils_server
